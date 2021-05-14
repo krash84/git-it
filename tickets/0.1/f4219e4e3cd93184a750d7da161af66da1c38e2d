@@ -7,3 +7,5 @@ Weight: 9
 Status: open
 Assigned to: -
 
+Если запустить, к примеру: it list | grep major - будет ошибка
+UnicodeEncodeError: 'ascii' codec can't encode characters in position 23-32: ordinal not in range(128)
