@@ -14,7 +14,7 @@ except ImportError:
   sha1_constructor = sha.new
 
 def cmp_by_prio(t1, t2):
-  return cmp(t1.prio, t2.prio)
+  return misc.cmp(t1.prio, t2.prio)
 
 def cmp_by_date(t1, t2):
   if t1.date < t2.date:
@@ -55,7 +55,7 @@ def versionCmp(strx, stry):
   # Compare x to y
   x = int(valuex)
   y = int(valuey)
-  return cmp(x, y)
+  return misc.cmp(x, y)
 
 def cmp_by_release_dir(dir1, dir2):
   _, _, _, title1 = dir1
@@ -92,8 +92,8 @@ class Gitit:
   
   def init(self):
     if self.itdb_exists():
-      print 'Already initialized issue database in branch \'%s\'.' % \
-                                                             it.ITDB_BRANCH
+      print('Already initialized issue database in branch \'%s\'.' % \
+                                                             it.ITDB_BRANCH)
       return
     
     # else, initialize the new .it database alongside the .git repo
@@ -121,7 +121,7 @@ class Gitit:
       abs_ticket_dir = os.path.join(repo.find_root(), it.TICKET_DIR)
       git.command_lines('reset', ['HEAD', abs_ticket_dir])
       misc.rmdirs(abs_ticket_dir)
-      print 'Initialized empty ticket database.'
+      print('Initialized empty ticket database.')
   
   def match_or_error(self, sha):
     self.require_itdb()
@@ -157,11 +157,11 @@ class Gitit:
       if timestamp1 < timestamp2:
         try:
           i = ticket.create_from_file(it.EDIT_TMP_FILE, fullsha, rel)
-        except ticket.MalformedTicketFieldException, e:
-          print 'Error parsing ticket: %s' % e
+        except ticket.MalformedTicketFieldException as e:
+          print('Error parsing ticket: %s' % e)
           sys.exit(1)
-        except ticket.MissingTicketFieldException, e:
-          print 'Error parsing ticket: %s' % e
+        except ticket.MissingTicketFieldException as e:
+          print('Error parsing ticket: %s' % e)
           sys.exit(1)
 
         # Now, when the edit has succesfully taken place, switch branches, commit,
@@ -175,9 +175,9 @@ class Gitit:
         abs_ticket_dir = os.path.join(repo.find_root(), it.TICKET_DIR)
         git.command_lines('reset', ['HEAD', abs_ticket_dir])
         misc.rmdirs(abs_ticket_dir)
-        print 'ticket \'%s\' edited succesfully' % sha7
+        print('ticket \'%s\' edited succesfully' % sha7)
       else:
-        print 'editing of ticket \'%s\' cancelled' % sha7
+        print('editing of ticket \'%s\' cancelled' % sha7)
     else:
       log.printerr('editing of ticket \'%s\' failed' % sha7)
 
@@ -218,8 +218,8 @@ class Gitit:
       git.command_lines('reset', ['HEAD', abs_ticket_dir])
       misc.rmdirs(abs_ticket_dir)
 
-      print 'ticket \'%s\' moved to release \'%s\'' % (sha7, to_rel)
-    except OSError, e:
+      print('ticket \'%s\' moved to release \'%s\'' % (sha7, to_rel))
+    except OSError as e:
       log.printerr('could not move ticket \'%s\' to \'%s\':' % (sha7, to_rel))
       log.printerr(e)
   
@@ -231,10 +231,10 @@ class Gitit:
     # check whether this working tree has unstaged/uncommitted changes
     # in order to prevent data loss from happening
     if git.has_unstaged_changes():
-      print 'current working tree has unstaged changes. aborting.'
+      print('current working tree has unstaged changes. aborting.')
       sys.exit(1)
     if git.has_uncommitted_changes():
-      print 'current working tree has uncommitted changes. aborting.'
+      print('current working tree has uncommitted changes. aborting.')
       sys.exit(1)
 
     # now we may sync the git-it branch safely!
@@ -250,22 +250,22 @@ class Gitit:
     try:
       i = ticket.create_interactive()
     except KeyboardInterrupt:
-      print ''
-      print 'aborting new ticket'
+      print('')
+      print('aborting new ticket')
       return None
 
     # Generate a SHA1 id
     s = sha1_constructor()
-    s.update(i.__str__())
-    s.update(os.getlogin())
-    s.update(datetime.datetime.now().__str__())
+    s.update(i.__str__().encode('utf8'))
+    s.update(os.getlogin().encode('utf8'))
+    s.update(datetime.datetime.now().__str__().encode('utf8'))
     i.id = s.hexdigest()
 
     # Save the ticket to disk
     i.save()
     _, ticketname = os.path.split(i.filename())
     sha7 = misc.chop(ticketname, 7)
-    print 'new ticket \'%s\' saved' % sha7
+    print('new ticket \'%s\' saved' % sha7)
 
     # Commit the new ticket to the 'aaa' branch
     curr_branch = git.current_branch()
@@ -308,12 +308,12 @@ class Gitit:
       header = release_line
 
     # First, filter all types that do not need to be shown out of the list
-    tickets_to_print = filter(lambda t: t.status in show_types, tickets)
+    tickets_to_print = list(filter(lambda t: t.status in show_types, tickets))
     if len(tickets_to_print) > 0:
-      print header
+      print(header)
 
       # Then, sort the tickets by date modified
-      tickets_to_print.sort(cmp_by_prio_then_date)
+      tickets_to_print.sort(key=misc.cmp_to_key(cmp_by_prio_then_date))
 
       # ...and finally, print them
       hide_status = show_types == [ 'open' ]
@@ -328,7 +328,7 @@ class Gitit:
 
       # Calculate the real value for the zero-width column
       # Assumption here is that there is only 1 zero-width column
-      visible_colwidths = map(lambda c: c['width'], filter(lambda c: c['visible'], cols))
+      visible_colwidths = list(map(lambda c: c['width'], filter(lambda c: c['visible'], cols)))
       total_width = sum(visible_colwidths) + len(visible_colwidths)
       for col in cols:
         if col['width'] == 0:
@@ -340,15 +340,15 @@ class Gitit:
           continue
         colstrings.append(misc.pad_to_length(col['id'], col['width']))
 
-      print colors.colors['blue-on-white'] + \
+      print(colors.colors['blue-on-white'] + \
             ' '.join(colstrings) +           \
-            colors.colors['default']
+            colors.colors['default'])
 
       for t in tickets_to_print:
         print_count += 1
-        print t.oneline(cols, annotate_ownership)
+        print(t.oneline(cols, annotate_ownership))
 
-      print ''
+      print('')
     else:
       pass
       
@@ -356,8 +356,8 @@ class Gitit:
 	
   def list(self, show_types = ['open', 'test'], releases_filter = []):
     self.require_itdb()
-    releasedirs = filter(lambda x: x[1] == 'tree', git.tree(it.ITDB_BRANCH + \
-                                                         ':' + it.TICKET_DIR))
+    releasedirs = list(filter(lambda x: x[1] == 'tree', git.tree(it.ITDB_BRANCH + \
+                                                         ':' + it.TICKET_DIR)))
 
     # Filter releases
     if releases_filter:
@@ -370,14 +370,14 @@ class Gitit:
 
     # Show message if no tickets there
     if len(releasedirs) == 0:
-      print 'no tickets yet. use \'it new\' to add new tickets.'
+      print('no tickets yet. use \'it new\' to add new tickets.')
       return
 
     # Collect tickets assigned to self on the way
     inbox = []
 
     print_count = 0
-    releasedirs.sort(cmp_by_release_dir)
+    releasedirs.sort(key=misc.cmp_to_key(cmp_by_release_dir))
     for _, _, sha, rel in releasedirs:
       reldir = os.path.join(it.TICKET_DIR, rel)
       ticketfiles = git.tree(it.ITDB_BRANCH + ':' + reldir)
@@ -387,19 +387,19 @@ class Gitit:
                 ]
 
       # Store the tickets in the inbox if neccessary
-      inbox += filter(lambda t: t.is_mine(), tickets)
+      inbox += list(filter(lambda t: t.is_mine(), tickets))
       
       print_count += self.__print_ticket_rows(rel, tickets, show_types, True, True)
 
     print_count += self.__print_ticket_rows('INBOX', inbox, (show_types == ['open','test']) and ['open'] or show_types, False, False)
 
     if print_count == 0:
-      print 'use the -a flag to show all tickets'
+      print('use the -a flag to show all tickets')
   
   def rm(self, sha):
     match = self.match_or_error(sha)
-    print match
-    raw_input()
+    print(match)
+    input()
     _, basename = os.path.split(match)
     sha7 = misc.chop(basename, 7)
 
@@ -412,7 +412,7 @@ class Gitit:
     abs_ticket_dir = os.path.join(repo.find_root(), it.TICKET_DIR)
     git.command_lines('reset', ['HEAD', abs_ticket_dir])
     misc.rmdirs(abs_ticket_dir)
-    print 'ticket \'%s\' removed'% sha7
+    print('ticket \'%s\' removed'% sha7)
   
   def get_ticket(self, sha):
     match = self.match_or_error(sha)
@@ -442,7 +442,7 @@ class Gitit:
     abs_ticket_dir = os.path.join(repo.find_root(), it.TICKET_DIR)
     git.command_lines('reset', ['HEAD', abs_ticket_dir])
     misc.rmdirs(abs_ticket_dir)
-    print 'ticket \'%s\' %s' % (sha7, new_status)
+    print('ticket \'%s\' %s' % (sha7, new_status))
   
   def reopen_ticket(self, sha):
     i, _, fullsha, match = self.get_ticket(sha)
@@ -463,7 +463,7 @@ class Gitit:
     abs_ticket_dir = os.path.join(repo.find_root(), it.TICKET_DIR)
     git.command_lines('reset', ['HEAD', abs_ticket_dir])
     misc.rmdirs(abs_ticket_dir)
-    print 'ticket \'%s\' reopened' % sha7
+    print('ticket \'%s\' reopened' % sha7)
 
   def take_ticket(self, sha):
     i, _, fullsha, match = self.get_ticket(sha)
@@ -480,7 +480,7 @@ class Gitit:
     abs_ticket_dir = os.path.join(repo.find_root(), it.TICKET_DIR)
     git.command_lines('reset', ['HEAD', abs_ticket_dir])
     misc.rmdirs(abs_ticket_dir)
-    print 'ticket \'%s\' taken' % sha7
+    print('ticket \'%s\' taken' % sha7)
 
   def leave_ticket(self, sha):
     i, _, fullsha, match = self.get_ticket(sha)
@@ -496,6 +496,4 @@ class Gitit:
     abs_ticket_dir = os.path.join(repo.find_root(), it.TICKET_DIR)
     git.command_lines('reset', ['HEAD', abs_ticket_dir])
     misc.rmdirs(abs_ticket_dir)
-    print 'ticket \'%s\' taken' % sha7
-  
-
+    print('ticket \'%s\' taken' % sha7)

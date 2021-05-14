@@ -31,11 +31,11 @@ def is_int(s):
   return True
 
 def ask_for_pattern(message, pattern = None):
-  input = raw_input(message)
+  inp = input(message)
   if pattern:
-    while not pattern(input):
-      input = raw_input(message)
-  return input
+    while not pattern(inp):
+      inp = input(message)
+  return inp
 
 
 #
@@ -95,7 +95,7 @@ def create_from_lines(array_with_lines, id = None, release = None, backward_comp
     
     pos = line.find(':')
     if pos < 0:
-      raise MalformedTicketFieldException, 'Cannot parse field "%s".' % line
+      raise MalformedTicketFieldException('Cannot parse field "%s".' % line)
     
     key = line[:pos].strip()
     val = line[pos+1:].strip()
@@ -107,8 +107,8 @@ def create_from_lines(array_with_lines, id = None, release = None, backward_comp
   if not backward_compatible:
     requires_fields_set.append('Weight')
   for required_field in requires_fields_set:
-    if not ticket.has_key(required_field):
-      raise MissingTicketFieldException, 'Ticket misses field "%s". Parsed so far: %s' % (required_field, ticket)
+    if required_field not in ticket:
+      raise MissingTicketFieldException('Ticket misses field "%s". Parsed so far: %s' % (required_field, ticket))
 
   # Now, set the ticket fields
   i.title = ticket['Subject']
@@ -117,7 +117,7 @@ def create_from_lines(array_with_lines, id = None, release = None, backward_comp
   i.date = parse_datetime_string(ticket['Date'])
   i.body = ticket[None].strip()
   i.prio = int(ticket['Priority'])
-  if ticket.has_key('Weight'):  # weight was added later, be backward compatible
+  if 'Weight' in ticket:  # weight was added later, be backward compatible
     i.weight = int(ticket['Weight'])
   i.status = ticket['Status']
   i.assigned_to = ticket['Assigned to']
@@ -252,8 +252,8 @@ class Ticket:
       color_field = 'red-on-white'
     if not color_value:
       color_value = 'default'
-    print '%s%s:%s %s%s%s' % (colors.colors[color_field], field, colors.colors['default'], \
-                              colors.colors[color_value], value, colors.colors['default'])
+    print('%s%s:%s %s%s%s' % (colors.colors[color_field], field, colors.colors['default'], \
+                              colors.colors[color_value], value, colors.colors['default']))
 
   def print_ticket(self, fullsha = None):
     if fullsha:
@@ -267,8 +267,8 @@ class Ticket:
     self.print_ticket_field('Status', self.status, None, self.status_colors[self.status])
     self.print_ticket_field('Assigned to', self.assigned_to)
     self.print_ticket_field('Release', self.release)
-    print ''
-    print self.body
+    print('')
+    print(self.body)
 
   def filename(self):
     file = os.path.join(repo.find_root(), it.TICKET_DIR, self.release, self.id)
@@ -296,9 +296,9 @@ class Ticket:
     dir, _ = os.path.split(file)
     if dir and not os.path.isdir(dir):
       misc.mkdirs(dir)
-    f = open(file, 'w')
+    f = open(file, 'wb')
     try:
-      f.write(contents)
+      f.write(contents.encode('utf-8'))
     finally:
       f.close
 

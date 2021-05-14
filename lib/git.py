@@ -9,7 +9,7 @@ def quote_string(s):
   return '\"%s\"' % s
 
 def current_branch():
-  return filter(lambda x: x[1], all_branches())[0][0]
+  return list(filter(lambda x: x[1], all_branches()))[0][0]
 
 def all_branches():
   branches = command_lines('branch', ['-a'])
@@ -91,4 +91,4 @@ def has_uncommitted_changes():
   return exitcode != 0
 
 if __name__ == '__main__':
-  print full_tree(current_branch())
+  print(full_tree(current_branch()))
