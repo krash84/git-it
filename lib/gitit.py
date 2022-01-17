@@ -1,4 +1,4 @@
-import sys, os, re
+import sys, os, re, getpass
 import datetime
 import misc, repo, log, ticket, colors, git, it
 
@@ -257,7 +257,7 @@ class Gitit:
     # Generate a SHA1 id
     s = sha1_constructor()
     s.update(i.__str__().encode('utf8'))
-    s.update(os.getlogin().encode('utf8'))
+    s.update(getpass.getuser().encode('utf8'))
     s.update(datetime.datetime.now().__str__().encode('utf8'))
     i.id = s.hexdigest()
 
